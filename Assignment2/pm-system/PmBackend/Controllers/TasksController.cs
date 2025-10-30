@@ -9,7 +9,7 @@ namespace PmBackend.Controllers
 {
     [ApiController]
     [Authorize]
-    [Route("api/projects/{projectId}/[controller]")]
+    [Route("api")]
     public class TasksController : ControllerBase
     {
         private readonly TaskService _taskService;
@@ -22,14 +22,8 @@ namespace PmBackend.Controllers
         private int GetUserId() =>
             int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        [HttpGet]
-        public async Task<IActionResult> GetTasks(int projectId)
-        {
-            var tasks = await _taskService.GetTasksForProjectAsync(GetUserId(), projectId);
-            return Ok(tasks);
-        }
-
-        [HttpPost]
+        // ✅ POST /api/projects/{projectId}/tasks
+        [HttpPost("projects/{projectId}/tasks")]
         public async Task<IActionResult> CreateTask(int projectId, TaskDto dto)
         {
             var task = new TaskItem
@@ -44,16 +38,19 @@ namespace PmBackend.Controllers
             return Ok(created);
         }
 
-        [HttpPatch("{taskId}/toggle")]
-        public async Task<IActionResult> ToggleTask(int projectId, int taskId)
+        // ✅ PUT /api/tasks/{taskId}
+        [HttpPut("tasks/{taskId}")]
+        public async Task<IActionResult> UpdateTask(int taskId, TaskDto dto)
         {
-            var success = await _taskService.UpdateTaskStatusAsync(GetUserId(), taskId, true);
+            // we’ll reuse your existing update status method or add one in service
+            var success = await _taskService.UpdateTaskStatusAsync(GetUserId(), taskId, dto.IsCompleted);
             if (!success) return NotFound();
-            return Ok("Task marked as completed");
+            return Ok("Task updated successfully");
         }
 
-        [HttpDelete("{taskId}")]
-        public async Task<IActionResult> DeleteTask(int projectId, int taskId)
+        // ✅ DELETE /api/tasks/{taskId}
+        [HttpDelete("tasks/{taskId}")]
+        public async Task<IActionResult> DeleteTask(int taskId)
         {
             var success = await _taskService.DeleteTaskAsync(GetUserId(), taskId);
             if (!success) return NotFound();

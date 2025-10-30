@@ -22,19 +22,30 @@ namespace PmBackend.Controllers
         private int GetUserId() =>
             int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
+        // ✅ GET /api/projects
         [HttpGet]
-        public async Task<IActionResult> GetUserProjects()
+        public async Task<IActionResult> GetProjects()
         {
             var projects = await _projectService.GetProjectsByUserAsync(GetUserId());
             return Ok(projects);
         }
 
+        // ✅ GET /api/projects/{id}
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetProjectById(int id)
+        {
+            var project = await _projectService.GetProjectByIdAsync(GetUserId(), id);
+            if (project == null) return NotFound();
+            return Ok(project);
+        }
+
+        // ✅ POST /api/projects
         [HttpPost]
         public async Task<IActionResult> CreateProject(ProjectDto dto)
         {
             var project = new Project
             {
-                Title = dto.Title,
+                Title = dto.Title,                // fixed from Name → Title
                 Description = dto.Description,
                 UserId = GetUserId()
             };
@@ -43,10 +54,11 @@ namespace PmBackend.Controllers
             return Ok(created);
         }
 
-        [HttpDelete("{projectId}")]
-        public async Task<IActionResult> DeleteProject(int projectId)
+        // ✅ DELETE /api/projects/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProject(int id)
         {
-            var success = await _projectService.DeleteProjectAsync(GetUserId(), projectId);
+            var success = await _projectService.DeleteProjectAsync(GetUserId(), id);
             if (!success) return NotFound();
             return Ok("Project deleted successfully");
         }

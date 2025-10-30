@@ -30,23 +30,6 @@ This project allows users to **add, view, toggle, and delete tasks**. The backen
 
 ---
 
-## 🗂️ Folder Structure
-
-├── TaskManagerApi/ # .NET backend
-│ ├── Program.cs
-│ ├── Controllers/
-│ │ └── TasksController.cs
-│ └── Properties/
-│ └── launchSettings.json
-└── task-manager/ # React frontend
-├── src/
-│ ├── App.tsx
-│ ├── services/
-│ │ └── api.ts
-│ └── main.tsx
-├── index.html
-└── package.json
-
 ## ⚙️ Setup Instructions
 
 ### 🧠 Prerequisites
@@ -61,9 +44,10 @@ This project allows users to **add, view, toggle, and delete tasks**. The backen
 ```bash
 cd TaskManagerApi
 dotnet run
+```
 The server will start at:
 👉 http://localhost:5275
-```
+
 ### 🌐 2. Run the Frontend
 ```
 cd task-manager

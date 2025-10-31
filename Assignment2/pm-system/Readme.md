@@ -117,33 +117,42 @@ PmFrontend/
 ## 🧠 Example Request Bodies
 
 ### **Register**
-```json
 POST /api/auth/register
+```json
 {
   "email": "test@example.com",
   "password": "password123"
 }
-Login
+```
+### Login
 POST /api/auth/login
+```json
 {
   "email": "test@example.com",
   "password": "password123"
 }
-Create Project
+```
+### Create Project
 POST /api/projects
+```json
 {
   "name": "AI Research Dashboard"
 }
-Add Task
+```
+### Add Task
 POST /api/projects/1/tasks
+```json
 {
   "title": "Build model training pipeline"
 }
-Update Task
+```
+### Update Task
 PUT /api/tasks/3
+```json
 {
   "isCompleted": true
 }
+```
 ## 🧭 Frontend Navigation Flow
 Page	Route	Description
 Register	/register	User signup form
@@ -152,23 +161,21 @@ Dashboard	/	List of projects
 Project Details	/projects/:id	Shows project tasks and allows adding/updating/deleting
 ⚡ Running Locally
 1️⃣ Backend Setup
+``` 
 cd PmBackend
 dotnet restore
 dotnet run
+```
 ➡️ Runs on: https://localhost:5094 (Swagger enabled)
 2️⃣ Frontend Setup
+```
 cd PmFrontend
 npm install
 npm run dev
+```
 ➡️ Runs on: http://localhost:5173
-🔐 Environment Variables
-PmBackend/appsettings.json
-"Jwt": {
-  "Key": "supersecretkey12345",
-  "Issuer": "PmBackend",
-  "Audience": "PmFrontend"
-}
-🔄 CORS Configuration (Backend)
+
+### 🔄 CORS Configuration (Backend)
 Enabled in Program.cs:
 builder.Services.AddCors(options =>
 {
@@ -180,7 +187,8 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
-🧰 Tools & Libraries Used
+
+### 🧰 Tools & Libraries Used
 Backend
 Microsoft.AspNetCore.Authentication.JwtBearer
 Microsoft.EntityFrameworkCore.InMemory
@@ -191,17 +199,11 @@ axios
 vite
 typescript
 tailwindcss (optional)
-🧑‍💻 Author
+
+### 🧑‍💻 Author
 Kuwar Jain
 📍 Built as part of a full-stack assignment
 💡 Stack: .NET + React + TypeScript
-📸 Screenshots (Optional)
-Add:
-Register/Login Page
-Dashboard Page
-Project Detail Page (tasks view)
-🧾 License
-This project is licensed under the MIT License.
 
 ## ⭐ Summary
 🔹 Full-stack project management web app

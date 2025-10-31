@@ -188,6 +188,94 @@ builder.Services.AddCors(options =>
     });
 });
 
+## 📋 Validation Rules
+
+### **Username**
+- Minimum 3 characters
+- Maximum 20 characters
+- Alphanumeric characters recommended
+
+### **Password**
+- Minimum 6 characters for frontend (adjust backend as needed)
+- Both passwords must match on registration
+
+### **Project Title**
+- Minimum 3 characters
+- Maximum 100 characters
+- Required field
+
+### **Project Description**
+- Maximum 500 characters
+- Optional field
+- Character counter provided
+
+### **Task Title**
+- Minimum 2 characters
+- Maximum 200 characters
+- Required field
+
+### **Task Due Date**
+- Optional field
+- Cannot be set to past dates
+- Format: YYYY-MM-DD
+
+### **Scheduled Reminder**
+- Must reference existing task
+- Scheduled time cannot be in past (recommended)
+- Reminder type: email, notification, or both
+
+---
+
+## 📊 Data Models
+
+### **User**
+public class User
+{
+public int Id { get; set; }
+public string Username { get; set; }
+public string PasswordHash { get; set; }
+public DateTime CreatedAt { get; set; }
+}
+
+text
+
+### **Project**
+public class Project
+{
+public int Id { get; set; }
+public int UserId { get; set; }
+public string Title { get; set; }
+public string Description { get; set; }
+public DateTime CreatedAt { get; set; }
+public List<Task> Tasks { get; set; }
+}
+
+text
+
+### **Task**
+public class Task
+{
+public int Id { get; set; }
+public int ProjectId { get; set; }
+public string Title { get; set; }
+public bool IsCompleted { get; set; }
+public DateTime? DueDate { get; set; }
+public DateTime CreatedAt { get; set; }
+}
+
+
+### **ScheduledTask**
+public class ScheduledTask
+{
+public int Id { get; set; }
+public int TaskId { get; set; }
+public DateTime ScheduledTime { get; set; }
+public string ReminderType { get; set; }
+public string Status { get; set; }
+public DateTime CreatedAt { get; set; }
+public Task Task { get; set; }
+}
+
 ### 🧰 Tools & Libraries Used
 Backend
 Microsoft.AspNetCore.Authentication.JwtBearer
@@ -200,14 +288,19 @@ vite
 typescript
 tailwindcss (optional)
 
+
 ### 🧑‍💻 Author
 Kuwar Jain
 📍 Built as part of a full-stack assignment
 💡 Stack: .NET + React + TypeScript
 
 ## ⭐ Summary
-🔹 Full-stack project management web app
-🔹 Secure JWT authentication
-🔹 In-memory EF backend with CORS
-🔹 React + TypeScript frontend with modular architecture
+
+🔹 Full-stack project management web app with task scheduling  
+🔹 Secure JWT authentication with comprehensive validation  
+🔹 In-memory EF backend with CORS and Swagger documentation  
+🔹 React + TypeScript + Tailwind CSS frontend with error handling  
+🔹 Task scheduling and reminder system  
+🔹 Responsive, user-friendly interface  
+🔹 Production-ready error handling and form validation  
 🔹 Ideal for showcasing full-stack skills (ASP.NET + React)

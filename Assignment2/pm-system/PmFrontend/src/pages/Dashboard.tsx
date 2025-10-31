@@ -14,71 +14,189 @@ export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState("");
 
   const fetchProjects = async () => {
-    const token = localStorage.getItem("token");
-    const res = await api.get("/projects", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setProjects(res.data);
+    try {
+      setFetchError("");
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setFetchError("Authentication token not found. Please login again.");
+        return;
+      }
+      const res = await api.get("/projects", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setProjects(res.data || []);
+    } catch (err) {
+      console.error("Failed to fetch projects:", err);
+      if (err.response?.status === 401) {
+        setFetchError("Your session has expired. Please login again.");
+        localStorage.removeItem("token");
+      } else {
+        setFetchError("Failed to load projects. Please try again later.");
+      }
+    }
   };
 
   useEffect(() => {
     fetchProjects();
   }, []);
 
+  // Validate form inputs
+  const validateForm = () => {
+    if (!title.trim()) {
+      setError("Project title is required");
+      return false;
+    }
+    if (title.trim().length < 3) {
+      setError("Project title must be at least 3 characters long");
+      return false;
+    }
+    if (title.trim().length > 100) {
+      setError("Project title must be less than 100 characters");
+      return false;
+    }
+    if (description.length > 500) {
+      setError("Description must be less than 500 characters");
+      return false;
+    }
+    return true;
+  };
+
   const createProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
-    
-    const projectData: { title: string; description?: string } = { title };
-    if (description.trim()) {
-      projectData.description = description;
+    setError("");
+    setSuccessMessage("");
+
+    if (!validateForm()) {
+      return;
     }
 
-    await api.post("/projects", projectData, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    
-    setTitle("");
-    setDescription("");
-    fetchProjects();
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Authentication token not found. Please login again.");
+        setLoading(false);
+        return;
+      }
+
+      const projectData: { title: string; description?: string } = { title };
+      if (description.trim()) {
+        projectData.description = description;
+      }
+
+      await api.post("/projects", projectData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setSuccessMessage("Project created successfully!");
+      setTitle("");
+      setDescription("");
+      await fetchProjects();
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      console.error("Failed to create project:", err);
+      if (err.response?.status === 401) {
+        setError("Your session has expired. Please login again.");
+      } else if (err.response?.status === 400) {
+        setError(err.response.data?.message || "Invalid project data. Please check your input.");
+      } else {
+        setError(err.response?.data?.message || "Failed to create project. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const deleteProject = async (id: number) => {
-    const token = localStorage.getItem("token");
-    await api.delete(`/projects/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    fetchProjects();
+    if (!window.confirm("Are you sure you want to delete this project?")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Authentication token not found. Please login again.");
+        return;
+      }
+
+      await api.delete(`/projects/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setSuccessMessage("Project deleted successfully!");
+      await fetchProjects();
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      console.error("Failed to delete project:", err);
+      if (err.response?.status === 401) {
+        setError("Your session has expired. Please login again.");
+      } else {
+        setError(err.response?.data?.message || "Failed to delete project. Please try again.");
+      }
+    }
   };
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "";
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    try {
+      const date = new Date(dateString);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
-      return "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    } else {
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
+      if (date.toDateString() === today.toDateString()) {
+        return "Today";
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        return "Yesterday";
+      } else {
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      }
+    } catch (err) {
+      return "Unknown date";
     }
   };
 
   return (
     <div className="min-h-screen w-screen bg-blue-100">
       <Navbar />
-      <div className="flex justify-center items-start pt-24">
+      <div className="flex justify-center items-start pt-24 pb-12">
         <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-2xl">
           <h2 className="text-2xl font-bold text-gray-700 mb-8">Projects</h2>
+
+          {/* Fetch Error Message */}
+          {fetchError && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+              {fetchError}
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+              {error}
+            </div>
+          )}
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4">
+              {successMessage}
+            </div>
+          )}
 
           {/* Create Project Form */}
           <form onSubmit={createProject} className="flex flex-col gap-4 mb-6">
@@ -87,12 +205,13 @@ export default function Dashboard() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Project Title"
-              required
+              disabled={loading}
+              maxLength={100}
             />
 
             <div className="relative">
               <textarea
-                className="w-full bg-gray-100 text-gray-800 placeholder-gray-400 rounded-lg px-6 py-3 text-lg outline-none focus:bg-white focus:ring-2 focus:ring-indigo-300 transition resize-none"
+                className="w-full bg-gray-100 text-gray-800 placeholder-gray-400 rounded-lg px-6 py-3 text-lg outline-none focus:bg-white focus:ring-2 focus:ring-indigo-300 transition resize-none disabled:bg-gray-200"
                 value={description}
                 onChange={(e) => {
                   if (e.target.value.length <= 500) {
@@ -101,6 +220,7 @@ export default function Dashboard() {
                 }}
                 placeholder="Project Description (Optional, max 500 characters)"
                 rows={3}
+                disabled={loading}
               />
               <span className="absolute bottom-2 right-4 text-sm text-gray-400">
                 {description.length}/500
@@ -109,16 +229,17 @@ export default function Dashboard() {
 
             <button
               type="submit"
-              className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg px-8 py-3 font-semibold text-lg"
+              disabled={loading}
+              className="bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white rounded-lg px-8 py-3 font-semibold text-lg transition"
             >
-              Add Project
+              {loading ? "Creating..." : "Add Project"}
             </button>
           </form>
 
           {/* Projects List */}
           <ul>
             {projects.length === 0 && (
-              <li className="text-gray-400 italic py-4">No projects yet.</li>
+              <li className="text-gray-400 italic py-4">No projects yet. Create one to get started!</li>
             )}
             {projects.map((p) => (
               <li

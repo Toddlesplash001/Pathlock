@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../api/api";
 import { Link } from "react-router-dom";
-
+import Navbar from "../components/ Navbar";
 interface Project {
   id: number;
   title: string;
@@ -44,6 +44,8 @@ export default function Dashboard() {
   };
 
   return (
+    <>
+    <Navbar/>
     <div>
       <h2>Projects</h2>
       <form onSubmit={createProject}>
@@ -65,5 +67,6 @@ export default function Dashboard() {
         ))}
       </ul>
     </div>
+    </>
   );
 }

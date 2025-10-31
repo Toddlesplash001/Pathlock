@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import api from "../api/api";
-
+import Navbar from "../components/ Navbar";
 interface Task {
   id: number;
   title: string;
@@ -62,6 +62,8 @@ export default function ProjectDetails() {
   };
 
   return (
+    <>
+    <Navbar/>
     <div>
       <h2>{project?.title}</h2>
 
@@ -92,5 +94,6 @@ export default function ProjectDetails() {
         ))}
       </ul>
     </div>
+    </>
   );
 }

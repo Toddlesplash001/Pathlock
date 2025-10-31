@@ -8,36 +8,63 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add EF InMemory
+// -----------------------------------------
+// 🔐 CORS Configuration
+// -----------------------------------------
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173") // Vite dev server
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+// -----------------------------------------
+// 🧠 Database
+// -----------------------------------------
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseInMemoryDatabase("PmBackendDb"));
 
-// Add services
+// -----------------------------------------
+// 🧩 Services
+// -----------------------------------------
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ProjectService>();
 builder.Services.AddScoped<TaskService>();
 
-// JWT setup
+// -----------------------------------------
+// 🔑 JWT Authentication
+// -----------------------------------------
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "local-dev-secret-key";
+var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!);
+        options.RequireHttpsMetadata = false; // 👈 important for localhost
+        options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
+            ValidateIssuer = false,
+            ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(key)
+            IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
         };
     });
 
-// Authorization
+// -----------------------------------------
+// 🧾 Authorization
+// -----------------------------------------
 builder.Services.AddAuthorization();
 
-// ✅ Add Controllers with JSON cycle handling
+// -----------------------------------------
+// 🧮 Controllers
+// -----------------------------------------
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -45,24 +72,43 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// Swagger
+// -----------------------------------------
+// 📘 Swagger
+// -----------------------------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Middleware
+// -----------------------------------------
+// 🌐 Middleware Order (VERY IMPORTANT)
+// -----------------------------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// ❌ Disable HTTPS redirect for local dev
+// app.UseHttpsRedirection();
+
+// ✅ Must be before Authentication & Controllers
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// ✅ Handle preflight (OPTIONS) requests explicitly
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.StatusCode = 200;
+        return;
+    }
+    await next();
+});
 
 app.Run();

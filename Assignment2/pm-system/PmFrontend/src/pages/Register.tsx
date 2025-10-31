@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/api";
+import axios from "axios"; // ✅ Import axios for type-safe error checking
+
+interface RegisterResponse {
+  token: string;
+}
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -10,7 +15,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Validate form inputs
+  // ✅ Validate form inputs
   const validateForm = () => {
     if (!username.trim()) {
       setError("Username is required");
@@ -43,35 +48,46 @@ export default function Register() {
     return true;
   };
 
-  const handleRegister = async (e) => {
+  // ✅ Handle registration safely
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
-    if (!validateForm()) {
-      return;
-    }
-    interface RegisterResponse {
-      token: string;
-    }
-    
+    if (!validateForm()) return;
+
     setLoading(true);
     try {
-      const res = await api.post<RegisterResponse>("/auth/register", { username, password });
+      const res = await api.post<RegisterResponse>("/auth/register", {
+        username,
+        password,
+      });
+
       if (res.data && res.data.token) {
         localStorage.setItem("token", res.data.token);
         navigate("/dashboard");
       } else {
         setError("Invalid response from server. Please try again.");
       }
-    } catch (err) {
-      if (err.response?.status === 401) {
-        setError("Username already exists. Please choose another one.");
-      } else if (err.response?.status === 400) {
-        setError(err.response.data?.message || "Registration failed. Invalid input.");
-      } else if (err.message === "Network Error") {
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        // ✅ Type-safe Axios error handling
+        if (err.response?.status === 401) {
+          setError("Username already exists. Please choose another one.");
+        } else if (err.response?.status === 400) {
+          setError(
+            err.response.data?.message ||
+              "Registration failed. Invalid input."
+          );
+        } else {
+          setError(
+            err.response?.data?.message ||
+              "Registration failed. Please try again."
+          );
+        }
+      } else if (err instanceof Error && err.message === "Network Error") {
         setError("Network error. Please check your connection.");
       } else {
-        setError(err.response?.data?.message || "Registration failed. Please try again.");
+        setError("An unexpected error occurred. Please try again.");
       }
       console.error("Registration failed:", err);
     } finally {

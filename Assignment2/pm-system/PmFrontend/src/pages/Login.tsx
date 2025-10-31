@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import axios, { AxiosError } from "axios";
 import api from "../api/api";
 
 export default function Login() {
@@ -9,7 +10,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Validate form inputs
+  // ✅ Validate form inputs
   const validateForm = () => {
     if (!username.trim()) {
       setError("Username is required");
@@ -30,34 +31,42 @@ export default function Login() {
     return true;
   };
 
-  const handleLogin = async (e) => {
+  // ✅ Define event type (React.FormEvent)
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
-      const res = await api.post("/auth/login", { username, password });
-      if (res.data && res.data.token) {
+      const res = await api.post<{ token: string }>("/auth/login", {
+        username,
+        password,
+      });
+
+      if (res.data?.token) {
         localStorage.setItem("token", res.data.token);
         navigate("/dashboard");
       } else {
         setError("Invalid response from server. Please try again.");
       }
-    } catch (err) {
-      if (err.response?.status === 401) {
-        setError("Invalid username or password");
-      } else if (err.response?.status === 400) {
-        setError(err.response.data?.message || "Invalid credentials");
-      } else if (err.message === "Network Error") {
+    } catch (err: unknown) {
+      // ✅ Safe Axios error handling
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setError("Invalid username or password");
+        } else if (err.response?.status === 400) {
+          setError(err.response.data?.message || "Invalid credentials");
+        } else {
+          setError(
+            err.response?.data?.message || "Login failed. Please try again."
+          );
+        }
+      } else if (err instanceof Error && err.message === "Network Error") {
         setError("Network error. Please check your connection.");
       } else {
-        setError(
-          err.response?.data?.message || "Login failed. Please try again."
-        );
+        setError("An unexpected error occurred.");
       }
       console.error("Login failed:", err);
     } finally {

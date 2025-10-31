@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/api";
 import { Link } from "react-router-dom";
 import Navbar from "../components/ Navbar";
+import axios, { AxiosError } from "axios";
 
 interface Project {
   id: number;
@@ -27,17 +28,23 @@ export default function Dashboard() {
         setFetchError("Authentication token not found. Please login again.");
         return;
       }
-      const res = await api.get("/projects", {
+
+      const res = await api.get<Project[]>("/projects", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       setProjects(res.data || []);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to fetch projects:", err);
-      if (err.response?.status === 401) {
-        setFetchError("Your session has expired. Please login again.");
-        localStorage.removeItem("token");
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setFetchError("Your session has expired. Please login again.");
+          localStorage.removeItem("token");
+        } else {
+          setFetchError("Failed to load projects. Please try again later.");
+        }
       } else {
-        setFetchError("Failed to load projects. Please try again later.");
+        setFetchError("Unexpected error occurred. Please try again.");
       }
     }
   };
@@ -46,24 +53,14 @@ export default function Dashboard() {
     fetchProjects();
   }, []);
 
-  // Validate form inputs
   const validateForm = () => {
-    if (!title.trim()) {
-      setError("Project title is required");
-      return false;
-    }
-    if (title.trim().length < 3) {
-      setError("Project title must be at least 3 characters long");
-      return false;
-    }
-    if (title.trim().length > 100) {
-      setError("Project title must be less than 100 characters");
-      return false;
-    }
-    if (description.length > 500) {
-      setError("Description must be less than 500 characters");
-      return false;
-    }
+    if (!title.trim()) return setError("Project title is required"), false;
+    if (title.trim().length < 3)
+      return setError("Project title must be at least 3 characters long"), false;
+    if (title.trim().length > 100)
+      return setError("Project title must be less than 100 characters"), false;
+    if (description.length > 500)
+      return setError("Description must be less than 500 characters"), false;
     return true;
   };
 
@@ -72,24 +69,17 @@ export default function Dashboard() {
     setError("");
     setSuccessMessage("");
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
       if (!token) {
         setError("Authentication token not found. Please login again.");
-        setLoading(false);
         return;
       }
 
-      const projectData: { title: string; description?: string } = { title };
-      if (description.trim()) {
-        projectData.description = description;
-      }
-
+      const projectData = { title, description: description.trim() || undefined };
       await api.post("/projects", projectData, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -99,16 +89,19 @@ export default function Dashboard() {
       setDescription("");
       await fetchProjects();
 
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to create project:", err);
-      if (err.response?.status === 401) {
-        setError("Your session has expired. Please login again.");
-      } else if (err.response?.status === 400) {
-        setError(err.response.data?.message || "Invalid project data. Please check your input.");
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401)
+          setError("Your session has expired. Please login again.");
+        else
+          setError(
+            err.response?.data?.message ||
+              "Failed to create project. Please try again."
+          );
       } else {
-        setError(err.response?.data?.message || "Failed to create project. Please try again.");
+        setError("Unexpected error occurred. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -116,9 +109,7 @@ export default function Dashboard() {
   };
 
   const deleteProject = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this project?")) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to delete this project?")) return;
 
     try {
       const token = localStorage.getItem("token");
@@ -133,41 +124,37 @@ export default function Dashboard() {
 
       setSuccessMessage("Project deleted successfully!");
       await fetchProjects();
-
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to delete project:", err);
-      if (err.response?.status === 401) {
-        setError("Your session has expired. Please login again.");
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401)
+          setError("Your session has expired. Please login again.");
+        else
+          setError(
+            err.response?.data?.message ||
+              "Failed to delete project. Please try again."
+          );
       } else {
-        setError(err.response?.data?.message || "Failed to delete project. Please try again.");
+        setError("Unexpected error occurred. Please try again.");
       }
     }
   };
 
-  const formatDate = (dateString: string | undefined) => {
+  const formatDate = (dateString?: string) => {
     if (!dateString) return "";
-    try {
-      const date = new Date(dateString);
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-      if (date.toDateString() === today.toDateString()) {
-        return "Today";
-      } else if (date.toDateString() === yesterday.toDateString()) {
-        return "Yesterday";
-      } else {
-        return date.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        });
-      }
-    } catch (err) {
-      return "Unknown date";
-    }
+    if (date.toDateString() === today.toDateString()) return "Today";
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   return (
@@ -177,28 +164,23 @@ export default function Dashboard() {
         <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-2xl">
           <h2 className="text-2xl font-bold text-gray-700 mb-8">Projects</h2>
 
-          {/* Fetch Error Message */}
           {fetchError && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
               {fetchError}
             </div>
           )}
-
-          {/* Error Message */}
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
               {error}
             </div>
           )}
-
-          {/* Success Message */}
           {successMessage && (
             <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4">
               {successMessage}
             </div>
           )}
 
-          {/* Create Project Form */}
+          {/* Form */}
           <form onSubmit={createProject} className="flex flex-col gap-4 mb-6">
             <input
               className="bg-gray-100 text-gray-800 placeholder-gray-400 rounded-lg px-6 py-3 text-lg outline-none focus:bg-white focus:ring-2 focus:ring-indigo-300 transition"
@@ -208,17 +190,15 @@ export default function Dashboard() {
               disabled={loading}
               maxLength={100}
             />
-
             <div className="relative">
               <textarea
                 className="w-full bg-gray-100 text-gray-800 placeholder-gray-400 rounded-lg px-6 py-3 text-lg outline-none focus:bg-white focus:ring-2 focus:ring-indigo-300 transition resize-none disabled:bg-gray-200"
                 value={description}
                 onChange={(e) => {
-                  if (e.target.value.length <= 500) {
+                  if (e.target.value.length <= 500)
                     setDescription(e.target.value);
-                  }
                 }}
-                placeholder="Project Description (Optional, max 500 characters)"
+                placeholder="Project Description (Optional)"
                 rows={3}
                 disabled={loading}
               />
@@ -236,10 +216,12 @@ export default function Dashboard() {
             </button>
           </form>
 
-          {/* Projects List */}
+          {/* Project List */}
           <ul>
             {projects.length === 0 && (
-              <li className="text-gray-400 italic py-4">No projects yet. Create one to get started!</li>
+              <li className="text-gray-400 italic py-4">
+                No projects yet. Create one to get started!
+              </li>
             )}
             {projects.map((p) => (
               <li

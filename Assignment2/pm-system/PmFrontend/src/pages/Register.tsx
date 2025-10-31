@@ -50,10 +50,13 @@ export default function Register() {
     if (!validateForm()) {
       return;
     }
-
+    interface RegisterResponse {
+      token: string;
+    }
+    
     setLoading(true);
     try {
-      const res = await api.post("/auth/register", { username, password });
+      const res = await api.post<RegisterResponse>("/auth/register", { username, password });
       if (res.data && res.data.token) {
         localStorage.setItem("token", res.data.token);
         navigate("/dashboard");

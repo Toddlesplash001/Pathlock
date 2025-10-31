@@ -62,38 +62,59 @@ export default function ProjectDetails() {
   };
 
   return (
-    <>
-    <Navbar/>
-    <div>
-      <h2>{project?.title}</h2>
-
-      <form onSubmit={addTask}>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="New Task"
-          required
-        />
-        <button type="submit">Add</button>
-      </form>
-
-      <ul>
-        {project?.tasks?.map((t) => (
-          <li key={t.id}>
-            <span
-              style={{
-                textDecoration: t.isCompleted ? "line-through" : "none",
-                cursor: "pointer",
-              }}
-              onClick={() => toggleTask(t)}
-            >
-              {t.title}
-            </span>
-            <button onClick={() => deleteTask(t.id)}> Delete </button>
-          </li>
-        ))}
-      </ul>
+    <div className="min-h-screen w-screen bg-blue-100">
+      <Navbar />
+      <div className="flex justify-center items-start pt-24">
+        <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-xl">
+          <h2 className="text-2xl font-bold text-gray-700 mb-8">
+            {project?.title}
+          </h2>
+          {/* Add Task */}
+          <form onSubmit={addTask} className="flex gap-4 mb-6">
+            <input
+              className="flex-1 bg-gray-100 text-gray-800 placeholder-gray-400 rounded-lg px-6 py-3 text-lg outline-none focus:bg-white focus:ring-2 focus:ring-indigo-300 transition"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="New Task"
+              required
+            />
+            <button className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg px-8 py-3 font-semibold text-lg">
+              Add
+            </button>
+          </form>
+          {/* Tasks List */}
+          <ul>
+            {project?.tasks && project.tasks.length === 0 && (
+              <li className="text-gray-400 italic py-4">No tasks yet.</li>
+            )}
+            {project?.tasks?.map((t) => (
+              <li
+                key={t.id}
+                className="flex items-center justify-between bg-blue-50 mb-2 rounded-lg px-5 py-3"
+              >
+                <span
+                  onClick={() => toggleTask(t)}
+                  className={`cursor-pointer text-lg ${
+                    t.isCompleted
+                      ? "line-through text-gray-400"
+                      : "text-gray-800 font-medium"
+                  }`}
+                >
+                  {t.title}
+                </span>
+                <div>
+                  <button
+                    onClick={() => deleteTask(t.id)}
+                    className="bg-indigo-400 hover:bg-indigo-600 text-white rounded px-4 py-1 text-base font-medium"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
-    </>
   );
 }

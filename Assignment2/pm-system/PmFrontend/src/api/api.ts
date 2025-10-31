@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5094/api",
+  // baseURL: "http://localhost:5094/api",
+  baseURL: "https://pathlock-xnv8.onrender.com/api",
 });
 
 api.interceptors.request.use((config) => {

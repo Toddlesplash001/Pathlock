@@ -13,10 +13,10 @@ var builder = WebApplication.CreateBuilder(args);
 // -----------------------------------------
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddPolicy("AllowVercel", policy =>
     {
         policy
-            .WithOrigins("http://localhost:5173") // Vite dev server
+            .WithOrigins("https://pathlock-iota.vercel.app") // Vite dev server
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -93,7 +93,7 @@ if (app.Environment.IsDevelopment())
 // app.UseHttpsRedirection();
 
 // ✅ Must be before Authentication & Controllers
-app.UseCors("AllowFrontend");
+app.UseCors("AllowVercel");
 
 app.UseAuthentication();
 app.UseAuthorization();
